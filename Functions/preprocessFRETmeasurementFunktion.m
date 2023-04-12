@@ -1,5 +1,5 @@
 function preprocessFRETmeasurementFunktion(measurementPlotData, savefolder, saveName, varargin)
-%UNTITLED2 Summary of this function goes here
+%preprocessFRETmeasurementFunktion Summary of this function goes here
 %   Detailed explanation goes here
 
 % Create input parser
@@ -74,10 +74,11 @@ if(dataIndex(1)) < bandwith
     dataIndex(1) = bandwith + 1;
     dataIndex(2) = dataIndex(2)+dif;
 end
+
 disp('Calculating....Correction...')
 
 
-tableData = correctIntensitys(tableData,btDF,btDA,btAD, btAF);
+tableData = correctIntensities(tableData,btDF,btDA,btAD, btAF);
 
 disp('Calculating....FRET and norming...')
 
@@ -96,11 +97,12 @@ tableData.AcceptorCor = AcceptorCorNorm;
 
 disp('Calculating....Bleaching correction...')
 
+dIwB1 = indexWBandwith(dataIndex(1), bandwith);
+dIwB2 = indexWBandwith(dataIndex(2), bandwith);
 
 DonorCorNormBleachCor = DonorCorNorm - tableData.("time (s)") *...
-    (mean(DonorCorNorm((dataIndex(2) - bandwith):(dataIndex(2) + bandwith)))...
-    -mean(DonorCorNorm((dataIndex(1) - bandwith):(dataIndex(1) + bandwith))))...
-    / (tableData.("time (s)")(dataIndex(2)) - tableData.("time (s)")(dataIndex(1)));
+    (mean(DonorCorNorm(dIwB1))-mean(DonorCorNorm(dIwB2))) / ...
+    (tableData.("time (s)")(dataIndex(2)) - tableData.("time (s)")(dataIndex(1)));
 tableData.DonorCorNormBleachCor = DonorCorNormBleachCor;
 
 FRETCorNormBleachCor = FRETCorNorm - tableData.("time (s)") *...
@@ -119,12 +121,7 @@ RatioFRETCorNormBleachCorDonorCorNormBleachCor = FRETCorNormBleachCor ./DonorCor
 tableData.RatioFRETCorNormBleachCorDonorCorNormBleachCor = RatioFRETCorNormBleachCorDonorCorNormBleachCor;
 
 
-tableData.Donor = tableData.Donor*10^6;
-tableData.Empty = tableData.Empty*10^6;
-tableData.FRET =  tableData.FRET*10^3;
-tableData.Acceptor =  tableData.Acceptor*10^3;
-tableData.FRETCor =  tableData.FRET*10^3;
-
+tableData = changeTableDataUnits(tableData);
 
 mkdir(fullfile(savefolder));
 fullsafeName = fullfile(savefolder, saveName);
@@ -132,114 +129,16 @@ writetable(tableData,append(fullsafeName,'.xlsx'));
 save(append(fullsafeName,'_processed','.mat'),'tableData');
 
 
-fig = figure;
-fig.Units = 'centimeters';
-fig.OuterPosition = [0.25 0.25 10 10];
-ax1 = subplot(2,2,1);
-plot(tableData.("time (s)"), tableData.Donor,'b')
-title("Donor")
-xlabel('t (s)')
-ylabel('Intensity (µA)')
-box off
-ax2 = subplot(2,2,2);
-plot(tableData.("time (s)"),tableData.Empty, 'b')
-xlabel('t (s)')
-ylabel('Intensity (µA)')
-box off
-ax3 = subplot(2,2,3);
-plot(tableData.("time (s)"),tableData.FRET, 'g')
-title("FRET")
-xlabel('t (s)')
-ylabel('Intensity (mV)')
-box off
-ax4 = subplot(2,2,4);
-plot(tableData.("time (s)"),tableData.Acceptor, 'g')
-xlabel('t (s)')
-ylabel('Intensity (mV)')
-title("Akzeptor")
-box off
-sgtitle(sprintf(saveName, '\n Raw'),'Interpreter', 'none', 'FontSize', 10)
-savefig(fig,append(fullsafeName,'_Raw.fig'));
-exportgraphics(fig,append(fullsafeName,'_Raw.png'),'Resolution',600)
-close;
-
-fig = figure;
-fig.Units = 'centimeters';
-fig.OuterPosition = [0.25 0.25 10 10];
-ax1 = subplot(2,2,1);
-plot(tableData.("time (s)"), tableData.Donor,'b')
-title("Donor")
-xlabel('t (s)')
-ylabel('Intensity (µA)')
-box off
-ax2 = subplot(2,2,2);
-plot(tableData.("time (s)"),tableData.Acceptor, 'g')
-xlabel('t (s)')
-ylabel('Intensity (mV)')
-title("Akzeptor")
-box off
-ax3 = subplot(2,2,3);
-plot(tableData.("time (s)"),tableData.FRETXia, 'g')
-xlabel('t (s)')
-ylabel('N_{FRET}')
-title("FRET^X^i^a")
-box off
-sgtitle(sprintf(append(saveName, '\n FRETXia')),'Interpreter', 'none', 'FontSize', 10)
-savefig(fig,append(fullsafeName,'_FRETXia.fig'));
-exportgraphics(fig,append(fullsafeName,'_FRETXia.png'),'Resolution',600)
-close;
-
-fig = figure;
-fig.Units = 'centimeters';
-fig.OuterPosition = [0.25 0.25 10 10];
-ax1 = subplot(2,2,1);
-plot(tableData.("time (s)"), tableData.DonorCorNormBleachCor,'b')
-title("Donor_{norm}")
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-box off
-ax2 = subplot(2,2,2);
-plot(tableData.("time (s)"),tableData.AcceptorCorNormBleachCor, 'g')
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-title("Akzeptor_{norm}")
-box off
-ax3 = subplot(2,2,3);
-plot(tableData.("time (s)"),tableData.FRETCorNormBleachCor, 'g')
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-title("FRET_{norm}")
-box off
-sgtitle(sprintf(append(saveName, '\n FRETCh')),'Interpreter', 'none', 'FontSize', 10)
-savefig(fig,append(fullsafeName,'_FRETCh.fig'));
-exportgraphics(fig,append(fullsafeName,'_FRETCh.png'),'Resolution',600)
+fig = createFRETplot(tableData, ...
+    repelem("time (s)", 4), ...
+    ["Donor" "Empty" "FRET" "Acceptor" ], ...
+    ["Donor" "Empty" "FRET" "Akzeptor"], ...
+    repelem("t (s)", 4), ...
+    ["Intensity (µA)" "Intensity (µA)" "Intensity (mV)" "Intensity (mV)"], ...
+    saveName);
+savePlotFigPng(fig, fullsafeName, "Raw");
 close;
 
 
-fig = figure;
-fig.Units = 'centimeters';
-fig.OuterPosition = [0.25 0.25 10 10];
-ax1 = subplot(2,2,1);
-plot(tableData.("time (s)"), tableData.DonorCorNormBleachCor,'b')
-title("Donor_{norm}")
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-box off
-ax2 = subplot(2,2,2);
-plot(tableData.("time (s)"),tableData.FRETCorNormBleachCor, 'g')
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-title("FRET{norm}")
-box off
-ax3 = subplot(2,2,3);
-plot(tableData.("time (s)"),tableData.RatioFRETCorNormBleachCorDonorCorNormBleachCor, 'g')
-xlabel('t (s)')
-ylabel('Intensity_{norm}')
-title("FRET-Ratio_{norm}")
-box off
-sgtitle(sprintf(append(saveName, '\n FRETRatio')),'Interpreter', 'none', 'FontSize', 10)
-savefig(fig,append(fullsafeName,'_FRETRatio.fig'));
-exportgraphics(fig,append(fullsafeName,'_FRETRatio.png'),'Resolution',600)
-close;
 disp(append('Finished: ', saveName));
 end

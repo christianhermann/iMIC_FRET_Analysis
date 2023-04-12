@@ -38,7 +38,9 @@ for j = 1:2
 end
 close;
 
-G = (mean(tableData.FRETCor(dataIndex(1):(dataIndex(1)+bandwith))) - mean(tableData.FRETCor(dataIndex(2):(dataIndex(2)+bandwith)))) / ...
-(mean(tableData.FRET(dataIndex(2):(dataIndex(2)+bandwith))) - mean(tableData.Donor(dataIndex(1):(dataIndex(1)+bandwith))));
+dIwB1 = indexWBandwith(dataIndex(1), bandwith);
+dIwB2 = indexWBandwith(dataIndex(2), bandwith);
+G = (mean(tableData.FRETCor(dIwB1)) - mean(tableData.FRETCor(dIwB2))) / ...
+(mean(tableData.FRET(dIwB2)) - mean(tableData.Donor(dIwB1)));
 
 end
