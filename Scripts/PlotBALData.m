@@ -1,0 +1,16 @@
+%addpath(genpath('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET'));
+%BALData = readtable('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET\AnalysisBAL.xlsx');
+BALData = readtable('C:\Users\Christian\Documents\FRET\AnalysisBAL.xlsx');
+BALData([8 12 18 19],:) = [];
+BALData.midi = categorical(BALData.midi);
+fig = figure();
+g = gramm('x',BALData.midi,'y',BALData.BAL_FRETXia_Rel);
+g.stat_violin('fill','transparent','normalization','width');
+g.no_legend();
+g.stat_boxplot('width',0.15);
+g.set_names('x','Midi','y','FRET Change');
+g.draw();
+g.update();
+g.geom_jitter('dodge',0.7);
+g.set_text_options("font",'Arial', 'base_size', 14, 'legend_scaling', 0.8,'legend_title_scaling', 0.8 );
+g.draw();
