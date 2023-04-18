@@ -31,7 +31,7 @@ classdef FRETdata
     %   btPbCorrectedData - The FRET data corrected for background fluorescence and photobleaching.
     %   Ratio             - The FRET ratio calculated from the btPbCorrectedData.
     %   NFRET             - The normalized FRET ratio (Xia et. al).
-    %   EFRET             - The E-FRET value ().
+    %   EFRET             - The E-FRET value (Zal et. al).
     %   normFRET          - The FRET ratio normalized to one.
     %
     % Methods:
@@ -170,22 +170,24 @@ classdef FRETdata
 
             dIwB1 = indexWBandwith(dataIndex(1), bandwith);
             dIwB2 = indexWBandwith(dataIndex(2), bandwith);
-
-            DonorCorNormBleachCor = Donor - tableData.("time (s)") *...
+            Acceptor = tableData.Acceptor;
+            Donor = tableData.Donor;
+            FRET = tableData.FRET;
+            DonorCorNormBleachCor = Donor - obj.cutTime *...
                 (mean(Donor(dIwB1))-mean(Donor(dIwB2))) / ...
-                (tableData.("time (s)")(dataIndex(2)) - tableData.("time (s)")(dataIndex(1)));
+                (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.Donor = DonorCorNormBleachCor;
 
-            FRETCorNormBleachCor = FRETCorNorm - tableData.("time (s)") *...
+            FRETCorNormBleachCor = FRETCorNorm - obj.cutTime *...
                 (mean(FRET((dataIndex(2) - bandwith):(dataIndex(2) + bandwith)))...
                 -mean(FRET((dataIndex(1) - bandwith):(dataIndex(1) + bandwith))))...
-                / (tableData.("time (s)")(dataIndex(2)) - tableData.("time (s)")(dataIndex(1)));
+                / (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.FRET = FRETCorNormBleachCor;
 
-            AcceptorCorNormBleachCor = AcceptorCor - tableData.("time (s)") *...
+            AcceptorCorNormBleachCor = AcceptorCor - obj.cutTime *...
                 (mean(Acceptor((dataIndex(2) - bandwith):(dataIndex(2) + bandwith)))...
                 -mean(Acceptor((dataIndex(1) - bandwith):(dataIndex(1) + bandwith))))...
-                / (tableData.("time (s)")(dataIndex(2)) - tableData.("time (s)")(dataIndex(1)));
+                / (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.Acceptor = AcceptorCorNormBleachCor;
 
             obj.btPbCorrectedData = newTable;
