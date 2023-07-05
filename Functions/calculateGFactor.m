@@ -21,7 +21,7 @@ btAF = p.Results.btAF;
 btAD = p.Results.btAD;
 btDA = p.Results.btDA;
 
-tableData = correctIntensitys(tableData,btDF,btDA,btAD, btAF);
+tableData = correctIntensities(tableData,btDF,btDA,btAD, btAF);
 
 fig = figure;
 plot( tableData.FRETCor,  '-o');

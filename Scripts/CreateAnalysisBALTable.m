@@ -15,7 +15,7 @@ files = files(~dirFlags); % A structure with extra info.
 
 
 
-filesBAL = files(contains({files.name}, 'BAL_processed.mat'));
+filesBAL = files(contains({files.name}, 'BAL.mat'));
 
 for i = 1:numel(filesBAL)
     filename = fullfile(filesBAL(i).folder, filesBAL(i).name);
@@ -23,9 +23,9 @@ for i = 1:numel(filesBAL)
 end
 
 for i = 1:numel(data)
-   figData = data{1,i}.tableData;
- fig = figure;
-plot(figData.("time (s)"), figData.FRETCorNormBleachCor,  '-o');
+FretData = data{1,i}.obj;
+fig = figure;
+plot(FretData.cutTime, FretData.btCorrectedData.FRET,  '-o');
 fig.WindowState = 'maximized';
 for j = 1:2
     shg
@@ -36,59 +36,52 @@ for j = 1:2
     c_info{j} = getCursorInfo(dcm_obj);
     dataIndex(i,j) = c_info{j}.DataIndex;
 end
+iwB1 = indexWBandwith(dataIndex(i,1), bandwith);
+iwB2 = indexWBandwith(dataIndex(i,2), bandwith);
 
-tableData = data{1,i}.tableData;
+dataTypes = ["cutData", "btCorrectedData", "btPbCorrectedData", "Ratio", "NFRET", "EFRET", "normFRET", "normRatio"];
 
-if dataIndex(i,2) + bandwith > size(tableData.Acceptor, 1)
-    dataIndex(i,2) = size(tableData.Acceptor, 1) - bandwith;
+tableData = table();
+
+for l = 1:numel(dataTypes)
+    dataType = dataTypes(l);
+    
+    % Generate variable name based on data type
+    variableName = genvarname(dataType);
+    
+    % Call calcFRETEfficiency function and get output values
+    [FRET_Rel, FRET_Abs, FRET_Bef, FRET_Aft] = calcFRETEfficiency(FretData.(dataType).FRET, iwB1, iwB2);
+    
+    % Add output values as columns to the table
+    tableData.(variableName + "_Rel") = FRET_Rel;
+    tableData.(variableName + "_Abs") = FRET_Abs;
+    tableData.(variableName + "_Bef") = FRET_Bef;
+    tableData.(variableName + "_Aft") = FRET_Aft;
 end
 
-BAL_FRETCor_Bef(i,1) = mean(tableData.FRETCor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith)));
-BAL_FRETCor_Aft(i,1) = mean(tableData.FRETCor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)));
-BAL_FRETCor_Abs(i,1) = BAL_FRETCor_Bef(i,1) - BAL_FRETCor_Aft(i,1);
-BAL_FRETCor_Rel(i,1) = BAL_FRETCor_Abs(i,1) / BAL_FRETCor_Bef(i,1);
 
-BAL_FRETCorNorm_Bef(i,1) = mean(tableData.FRETCorNorm((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith)));
-BAL_FRETCorNorm_Aft(i,1) = mean(tableData.FRETCorNorm((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)));
-BAL_FRETCorNorm_Abs(i,1) = BAL_FRETCorNorm_Bef(i,1) - BAL_FRETCorNorm_Aft(i,1);
-BAL_FRETCorNorm_Rel(i,1) = BAL_FRETCorNorm_Abs(i,1) / BAL_FRETCorNorm_Bef(i,1);
-
-BAL_FRETCorNormBleachCor_Bef(i,1) = mean(tableData.FRETCorNormBleachCor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith)));
-BAL_FRETCorNormBleachCor_Aft(i,1) = mean(tableData.FRETCorNormBleachCor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)));
-BAL_FRETCorNormBleachCor_Abs(i,1) = BAL_FRETCorNormBleachCor_Bef(i,1) - BAL_FRETCorNormBleachCor_Aft(i,1);
-BAL_FRETCorNormBleachCor_Rel(i,1) = BAL_FRETCorNormBleachCor_Abs(i,1) / BAL_FRETCorNormBleachCor_Bef(i,1);
-
-BAL_FRETXia_Bef(i,1) = mean(tableData.FRETXia((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith)));
-BAL_FRETXia_Aft(i,1) = mean(tableData.FRETXia((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)));
-BAL_FRETXia_Abs(i,1) = BAL_FRETXia_Bef(i,1) - BAL_FRETXia_Aft(i,1);
-BAL_FRETXia_Rel(i,1) = BAL_FRETXia_Abs(i,1) / BAL_FRETXia_Bef(i,1);
-
-BAL_FRETRatio_Bef(i,1) = mean(tableData.RatioFRETCorNormBleachCorDonorCorNormBleachCor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith)));
-BAL_FRETRatio_Aft(i,1) = mean(tableData.RatioFRETCorNormBleachCorDonorCorNormBleachCor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)));
-BAL_FRETRatio_Abs(i,1) = BAL_FRETRatio_Bef(i,1) - BAL_FRETRatio_Aft(i,1);
-BAL_FRETRatio_Rel(i,1) = BAL_FRETRatio_Abs(i,1) / BAL_FRETRatio_Bef(i,1);
-
-timeBef(i,1) = tableData.("time (s)")(dataIndex(i,1));
-timeAft(i,1) = tableData.("time (s)")(dataIndex(i,2));
-% BAL_FRETCor(i,1) = 1 - mean(figData.FRETCor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)) / mean(figData.FRETCor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith))));
-% BAL_FRETCorNorm(i,1) = 1 - mean(figData.FRETCorNorm((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)) / mean(figData.FRETCorNorm((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith))));
-% BAL_FRETCorNormBleachCor(i,1) = 1 - mean(figData.FRETCorNormBleachCor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)) / mean(figData.FRETCorNormBleachCor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith))));
-% BAL_FRETXia(i,1) = 1 - mean(figData.FRETXia((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)) / mean(figData.FRETXia((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith))));
-% BAL_FRETRatio(i,1) = 1 - mean(figData.RatioFRETDonor((dataIndex(i,2) - bandwith):(dataIndex(i,2) + bandwith)) / mean(figData.RatioFRETDonor((dataIndex(i,1) - bandwith):(dataIndex(i,1) + bandwith))));
+timeBef(i,1) = FretData.cutTime(dataIndex(i,1));
+timeAft(i,1) = FretData.cutTime(dataIndex(i,2));
 close(fig);
 end
 
 
 name = struct2table(filesBAL).name;
-splitnames = split(name, '-');
-midi = str2double(splitnames(:,4));
-date = splitnames(:,1);
-newTable = table(name, midi, date, timeBef, timeAft, ...
-    BAL_FRETCor_Bef, BAL_FRETCor_Aft, BAL_FRETCor_Abs,BAL_FRETCor_Rel, ...
-    BAL_FRETCorNorm_Bef, BAL_FRETCorNorm_Aft, BAL_FRETCorNorm_Abs,BAL_FRETCorNorm_Rel, ...
-    BAL_FRETCorNormBleachCor_Bef, BAL_FRETCorNormBleachCor_Aft, BAL_FRETCorNormBleachCor_Abs,BAL_FRETCorNormBleachCor_Rel, ...
-    BAL_FRETXia_Bef, BAL_FRETXia_Aft, BAL_FRETXia_Abs,BAL_FRETXia_Rel, ...
-    BAL_FRETRatio_Bef, BAL_FRETRatio_Aft, BAL_FRETRatio_Abs,BAL_FRETRatio_Rel);
+splitnames = cell(size(name));
+
+
+for i = 1:numel(name)
+    splitnames{i} = split(name{i}, '-');
+    midi(i,1) = str2double(splitnames{i}{4});
+    midiCo(i,1) = NaN;
+    if length(splitnames{i}) == 9 
+        midiCo(i,1) = str2double(splitnames{i}{6});
+    end
+dateMeas(i,1) = string(splitnames{i}{1});
+end
+
+newTable = table(name, midi, midiCo,dateMeas, timeBef, timeAft, ...
+    tableData);
 
 name1 = dataTable.name;
 name2 = newTable.name;

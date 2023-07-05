@@ -22,6 +22,7 @@ classdef FRETdata
     % Properties:
     %   fileName          - The file name.
     %   filePath          - The file path.
+    %   savePath          - The save path.
     %   rawData           - The raw FRET data.
     %   btData            - Bleedthrough values
     %   origTime          - The original time values
@@ -30,9 +31,10 @@ classdef FRETdata
     %   btCorrectedData   - The FRET data corrected for background fluorescence.
     %   btPbCorrectedData - The FRET data corrected for background fluorescence and photobleaching.
     %   Ratio             - The FRET ratio calculated from the btPbCorrectedData.
+    %   normRatio         - The FRET ratio calculated from normalized btPbCorrected Data
     %   NFRET             - The normalized FRET ratio (Xia et. al).
     %   EFRET             - The E-FRET value (Zal et. al).
-    %   normFRET          - The FRET ratio normalized to one.
+    %   normFRET          - The FRET values (btPBCorrected) normalized to one.
     %
     % Methods:
     %   cutMeasurement     - Cuts the measurement.
@@ -45,7 +47,8 @@ classdef FRETdata
     %   normFRETtoOne      - Normalizes the normFRET property to one.
     %   createFRETPlot     - Creates a plot of the FRET data.
     %   createRawDataPlot  - Creates a plot of the Raw data.
-    %   createXlsxTable     - Creates a xlsx table containing the data.
+    %   createXlsxTable    - Creates a xlsx table containing the data.
+    %   saveMatFile        - Saves a .mat file containing the data.
     %
     % See also:
     %   FRETdata/correctIntensities, FRETdata/correctBleaching, FRETdata/calculateRatio,
@@ -56,6 +59,7 @@ classdef FRETdata
     properties
         fileName
         filePath
+        savePath
         rawData
         btData
         Gfactor
@@ -66,13 +70,14 @@ classdef FRETdata
         btPbCorrectedData
         normFRET
         Ratio
+        normRatio
         NFRET
         EFRET
     end
 
     methods
         % Constructor
-        function obj = FRETdata(rawData, btData, Gfactor, fileName, filePath)
+        function obj = FRETdata(rawData, btData, Gfactor, fileName, filePath, savePath)
             % FRETdata Constructor creates an instance of the FRETdata class
             % with the rawData, btData, and Gfactor properties initialized
             % with the provided input values.
@@ -92,6 +97,7 @@ classdef FRETdata
             obj.Gfactor = Gfactor;
             obj.fileName = fileName;
             obj.filePath = filePath;
+            obj.savePath = savePath;
             obj.origTime = rawData.('time (s)');
         end
 
@@ -102,6 +108,7 @@ classdef FRETdata
             tableData = obj.(data);
             fig = figure;
             plot(tableData.('time (s)'), tableData.Donor,  '-o');
+            title ('Cut measurement', obj.fileName, 'Interpreter', 'none');
             grid on
             grid minor
             fig.WindowState = 'maximized';
@@ -129,65 +136,63 @@ classdef FRETdata
             % using the background and direct acceptor/donor
             % fluorescence measurements (btDF, btDA, btAD, btAF)
             tableData = obj.(data);
-            DonorCor = (tableData.Donor - obj.btData.btAD * tableData.Acceptor) / (1 - obj.btData.btDA * obj.btData.btAD);
-            AcceptorCor = (tableData.Acceptor - obj.btData.btDA * tableData.Donor) / (1 - obj.btData.btDA * obj.btData.btAD);
-            FRETCor = tableData.FRET - obj.btData.btDF * DonorCor - obj.btData.btAF * AcceptorCor;
-            newTable = table();
-            newTable.Donor = DonorCor;
-            newTable.Acceptor = AcceptorCor;
-            newTable.FRET = FRETCor;
+            newTable = correctIntensities(tableData, obj.btData.btDF, obj.btData.btDA, obj.btData.btAD, obj.btData.btAF);
             obj.btCorrectedData = newTable;
         end
 
         function obj = correctBleaching(obj, data, bandwith)
             % Corrects for photobleaching in the input data
             tableData = obj.(data);
-            fig = figure;
-            plot( tableData.Acceptor,  '-o');
-            grid on
-            grid minor
-            fig.WindowState = 'maximized';
+            tableDataNames = ["Donor" "FRET" "Acceptor"];
 
-            for j = 1:2
-                shg
-                dcm_obj = datacursormode(1);
-                set(dcm_obj,'DisplayStyle','window',...
-                    'SnapToDataVertex','off','Enable','on')
-                waitforbuttonpress
-                c_info{j} = getCursorInfo(dcm_obj);
-                dataIndex(j) = c_info{j}.DataIndex;
+            for k = 1:3
+                fig = figure;
+                plot( tableData.(tableDataNames{k}),  '-o');
+                title (append("Correct bleaching", tableDataNames{k}),obj.fileName,'Interpreter', 'none');
+                grid on
+                grid minor
+                fig.WindowState = 'maximized';
+
+                for j = 1:2
+                    shg
+                    dcm_obj = datacursormode(1);
+                    set(dcm_obj,'DisplayStyle','window',...
+                        'SnapToDataVertex','off','Enable','on')
+                    waitforbuttonpress
+                    c_info{j} = getCursorInfo(dcm_obj);
+                    dataIndex(j) = c_info{j}.DataIndex;
+                end
+                grid off;
+                close;
+
+                if(dataIndex(1)) < bandwith
+                    dif = bandwith - dataIndex(1);
+                    dataIndex(1) = bandwith + 1;
+                    dataIndex(2) = dataIndex(2)+dif;
+                end
+
+                dIwB1{k} = indexWBandwith(dataIndex(1), bandwith);
+                dIwB2{k} = indexWBandwith(dataIndex(2), bandwith);
             end
-            grid off;
-            close;
-
-            if(dataIndex(1)) < bandwith
-                dif = bandwith - dataIndex(1);
-                dataIndex(1) = bandwith + 1;
-                dataIndex(2) = dataIndex(2)+dif;
-            end
-
+               
             newTable = table();
 
-            dIwB1 = indexWBandwith(dataIndex(1), bandwith);
-            dIwB2 = indexWBandwith(dataIndex(2), bandwith);
             Acceptor = tableData.Acceptor;
             Donor = tableData.Donor;
             FRET = tableData.FRET;
             DonorCorNormBleachCor = Donor - obj.cutTime *...
-                (mean(Donor(dIwB1))-mean(Donor(dIwB2))) / ...
+                (mean(Donor(dIwB1{1}))-mean(Donor(dIwB2{1}))) / ...
                 (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.Donor = DonorCorNormBleachCor;
 
-            FRETCorNormBleachCor = FRETCorNorm - obj.cutTime *...
-                (mean(FRET((dataIndex(2) - bandwith):(dataIndex(2) + bandwith)))...
-                -mean(FRET((dataIndex(1) - bandwith):(dataIndex(1) + bandwith))))...
-                / (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
+            FRETCorNormBleachCor = FRET + obj.cutTime *...
+                (mean(FRET(dIwB1{2}))-mean(FRET(dIwB2{2}))) / ...
+                (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.FRET = FRETCorNormBleachCor;
 
-            AcceptorCorNormBleachCor = AcceptorCor - obj.cutTime *...
-                (mean(Acceptor((dataIndex(2) - bandwith):(dataIndex(2) + bandwith)))...
-                -mean(Acceptor((dataIndex(1) - bandwith):(dataIndex(1) + bandwith))))...
-                / (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
+            AcceptorCorNormBleachCor = Acceptor + obj.cutTime *...
+                (mean(Acceptor(dIwB1{3}))-mean(Acceptor(dIwB2{3}))) / ...
+                (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.Acceptor = AcceptorCorNormBleachCor;
 
             obj.btPbCorrectedData = newTable;
@@ -199,26 +204,32 @@ classdef FRETdata
             tableData = obj.(data);
             range = setto1meanstart:setto1meanlength;
             newTable = table();
-            DonorCorNorm = tableData.DonorCor ./ mean(tableData.DonorCor(range));
+            DonorCorNorm = tableData.Donor ./ mean(tableData.Donor(range));
             newTable.Donor = DonorCorNorm;
 
-            FRETCorNorm = tableData.FRETCor ./ mean(tableData.FRETCor(range));
+            FRETCorNorm = tableData.FRET ./ mean(tableData.FRET(range));
             newTable.FRET = FRETCorNorm;
 
-            AcceptorCorNorm = tableData.AcceptorCor ./ mean(tableData.AcceptorCor(range));
+            AcceptorCorNorm = tableData.Acceptor ./ mean(tableData.Acceptor(range));
             newTable.Acceptor = AcceptorCorNorm;
             obj.normFRET = newTable;
-
         end
 
-        function obj = calculateRatio(obj, data)
+        function obj = calculateRatio(obj, data, normed)
             % Calculates the FRET ratio from the input data
             tableData = obj.(data);
             RatioFRET = tableData.FRET ./ tableData.Donor;
+                        newTable = table();
             newTable.FRET = RatioFRET;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            obj.NFRET = newTable;
+            if normed == 0   
+                obj.Ratio = newTable;
+            end
+            if normed == 1 
+                obj.normRatio = newTable;
+            end
+
         end
 
         function obj = calculateNFRET(obj, data)
@@ -226,7 +237,7 @@ classdef FRETdata
             % corrected FRET data
             tableData = obj.(data);
             newTable = table();
-            FRETXia = FRET ./ sqrt(tableData.Donor .* tableData.Acceptor);
+            FRETXia = tableData.FRET ./ sqrt(tableData.Donor .* tableData.Acceptor);
             newTable.FRET = FRETXia;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
@@ -238,20 +249,21 @@ classdef FRETdata
 
             tableData = obj.(data);
             btData = obj.btData;
-            a = btData.AF;
-            b = btData.AD;
-            c = btData.DA;
-            d = btData.DF;
+            a = btData.btAF;
+            b = btData.btAD;
+            c = btData.btDA;
+            d = btData.btDF;
             G = obj.Gfactor;
             newTable = table();
             numerator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c) * tableData.Donor;
             denominator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c - G) * tableData.Donor;
             Eapp = numerator ./denominator;
-            Ecorr = Eapp * ((tableData.Acceptor(1) - c * tableData.Donor(1)) ./ (tableData.Acceptor - c * tableData.Donor));
+            Ecorr = Eapp .* ((tableData.Acceptor(1) - c * tableData.Donor(1)) ./ (tableData.Acceptor - c * tableData.Donor));
 
             newTable.FRET = Ecorr;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
+            obj.EFRET = newTable;
         end
 
         function fig = createRawDataPlot(obj, varargin)
@@ -394,8 +406,8 @@ classdef FRETdata
         function saveXlsxTable(obj)
             % Creates a Xlsx table containing the FRET data
 
-            mkdir(fullfile(obj.filePath));
-            fullsafeName = fullfile(obj.filePath, obj.fileName);
+            mkdir(fullfile(obj.savePath));
+            fullsafeName = fullfile(obj.savePath, obj.fileName);
             compSaveName = append(fullsafeName,'.xlsx');
             writetable(obj.rawData, compSaveName, 'Sheet', 'Raw');
             writematrix(obj.origTime, compSaveName, 'Sheet', 'origTime(s)');
@@ -405,8 +417,17 @@ classdef FRETdata
             writetable(obj.btPbCorrectedData, compSaveName, 'Sheet', 'btPbCorrectedData');
             writetable(obj.normFRET, compSaveName, 'Sheet', 'normFRET');
             writetable(obj.Ratio, compSaveName, 'Sheet', 'Ratio');
+            writetable(obj.normRatio, compSaveName, 'Sheet', 'normRatio');
             writetable(obj.NFRET, compSaveName, 'Sheet', 'NFRET');
             writetable(obj.EFRET, compSaveName, 'Sheet', 'EFRET');
         end
+
+        function  saveMatFile(obj)
+            mkdir(fullfile(obj.savePath));
+            fullsafeName = fullfile(obj.savePath, obj.fileName);
+            compSaveName = append(fullsafeName,'.mat');
+            save(compSaveName, "obj")
+        end
+
     end
 end

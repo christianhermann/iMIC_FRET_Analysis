@@ -22,8 +22,8 @@ btAD = p.Results.btAD;
 btDA = p.Results.btDA;
 
 %Fixed Values
-windowSize = 15;
-downsampleFrequency = 15;
+windowSize = 50;
+downsampleFrequency = 10;
 setto1meanlength = 500;
 setto1meanstart = 100;
 bandwith = 100;
