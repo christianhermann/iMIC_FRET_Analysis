@@ -30,10 +30,12 @@ classdef FRETdata
     %   cutData           - The FRET data with set start and end timepoints.
     %   btCorrectedData   - The FRET data corrected for background fluorescence.
     %   btPbCorrectedData - The FRET data corrected for background fluorescence and photobleaching.
+    %   pbIndices         - The chosen indices for the photobleaching correction
     %   Ratio             - The FRET ratio calculated from the btPbCorrectedData.
     %   normRatio         - The FRET ratio calculated from normalized btPbCorrected Data
     %   NFRET             - The normalized FRET ratio (Xia et. al).
     %   EFRET             - The E-FRET value (Zal et. al).
+    %   DFRET             - The DFRET value (Hochreiter et. al)
     %   normFRET          - The FRET values (btPBCorrected) normalized to one.
     %
     % Methods:
@@ -43,7 +45,8 @@ classdef FRETdata
     %   correctBleaching   - Corrects for photobleaching in the btCorrectedData property.
     %   calculateRatio     - Calculates the FRET ratio from the btCorrectedData property.
     %   calculateNFRET     - Calculates the normalized FRET ratio from the Ratio property.
-    %   calculateEFRET     - Calculates the E-FRET value from the NFRET property.
+    %   calculateEFRET     - Calculates the E-FRET value from the cutData property.
+    %   calculateDFRET     - Calculates the E-FRET value from the cutData property.
     %   normFRETtoOne      - Normalizes the normFRET property to one.
     %   createFRETPlot     - Creates a plot of the FRET data.
     %   createRawDataPlot  - Creates a plot of the Raw data.
@@ -73,6 +76,8 @@ classdef FRETdata
         normRatio
         NFRET
         EFRET
+        DFRET
+        pbIndices
     end
 
     methods
@@ -147,7 +152,7 @@ classdef FRETdata
 
             for k = 1:3
                 fig = figure;
-                plot( tableData.(tableDataNames{k}),  '-o');
+                plot(tableData.(tableDataNames{k})(round(1:numel(tableData.(tableDataNames{k}))/3)),  '-o');
                 title (append("Correct bleaching", tableDataNames{k}),obj.fileName,'Interpreter', 'none');
                 grid on
                 grid minor
@@ -174,13 +179,13 @@ classdef FRETdata
                 dIwB1{k} = indexWBandwith(dataIndex(1), bandwith);
                 dIwB2{k} = indexWBandwith(dataIndex(2), bandwith);
             end
-               
+            obj.pbIndices = [{"Donor" "FRET" "Acceptor"}; dIwB1; dIwB2];
             newTable = table();
 
             Acceptor = tableData.Acceptor;
             Donor = tableData.Donor;
             FRET = tableData.FRET;
-            DonorCorNormBleachCor = Donor - obj.cutTime *...
+            DonorCorNormBleachCor = Donor + obj.cutTime *...
                 (mean(Donor(dIwB1{1}))-mean(Donor(dIwB2{1}))) / ...
                 (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
             newTable.Donor = DonorCorNormBleachCor;
@@ -219,14 +224,14 @@ classdef FRETdata
             % Calculates the FRET ratio from the input data
             tableData = obj.(data);
             RatioFRET = tableData.FRET ./ tableData.Donor;
-                        newTable = table();
+            newTable = table();
             newTable.FRET = RatioFRET;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            if normed == 0   
+            if normed == 0
                 obj.Ratio = newTable;
             end
-            if normed == 1 
+            if normed == 1
                 obj.normRatio = newTable;
             end
 
@@ -255,15 +260,40 @@ classdef FRETdata
             d = btData.btDF;
             G = obj.Gfactor;
             newTable = table();
-            numerator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c) * tableData.Donor;
-            denominator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c - G) * tableData.Donor;
-            Eapp = numerator ./denominator;
+            Fc = tableData.FRET - a * (tableData.Acceptor -  c * tableData.Donor) - d * (tableData.Donor - b * tableData.Acceptor);
+            % numerator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c) * tableData.Donor;
+            % denominator = tableData.FRET - (a - b*d) * tableData.Acceptor - (d - a*c - G) * tableData.Donor;
+            % Eapp = numerator ./denominator;
+            Eapp = Fc ./ (Fc + G * tableData.Donor);
             Ecorr = Eapp .* ((tableData.Acceptor(1) - c * tableData.Donor(1)) ./ (tableData.Acceptor - c * tableData.Donor));
 
             newTable.FRET = Ecorr;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
             obj.EFRET = newTable;
+        end
+
+        function obj = calculateDFRET(obj, data)
+            tableData = obj.(data);
+            btData = obj.btData;
+            S2 = btData.btAF;
+            S4 = btData.btAD;
+            S3 = btData.btDA;
+            S1 = btData.btDF;
+            E = obj.Efactor;
+
+            Dcda = (tableData.Donor - S4 * tableData.Acceptor) / 1 - S3 * S4;
+            Acda = (tableData.Acceptor - S3 * tableData.Donor) / 1 - S3 * S4;
+            FRETc = tableData.FRET - Dcda * S1 - Acda * S2;
+
+            C1 = FRETc - (E * FRETc) / E * Dcda;
+            DFRET = FRETc / (C1 * Dcda + FRETc);
+
+            newTable.FRET = DFRET;
+            newTable.Donor = tableData.Donor;
+            newTable.Acceptor   = tableData.Acceptor;
+            obj.DFRET = newTable;
+
         end
 
         function fig = createRawDataPlot(obj, varargin)
@@ -400,7 +430,7 @@ classdef FRETdata
                 ylabel(ylab(i))
                 box off
             end
-            sgtitle(sprintf(obj.fileName, '\n' , data),'Interpreter', 'none', 'FontSize', 9)
+            sgtitle(append(obj.fileName, " - ", data),'Interpreter', 'none', 'FontSize', 9)
         end
 
         function saveXlsxTable(obj)
