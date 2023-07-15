@@ -11,6 +11,9 @@ addOptional(p, 'btDF', 0);
 addOptional(p, 'btAF', 0);
 addOptional(p, 'btAD', 0);
 addOptional(p, 'btDA', 0);
+addOptional(p, 'bgD', 0);
+addOptional(p, 'bgF', 0);
+addOptional(p, 'bgA', 0);
 
 % Parse inputs
 parse(p,  varargin{:});
@@ -20,8 +23,12 @@ btDF = p.Results.btDF;
 btAF = p.Results.btAF;
 btAD = p.Results.btAD;
 btDA = p.Results.btDA;
+bgD = p.Results.bgD;
+bgF = p.Results.bgF;
+bgA = p.Results.bgA;
 
-tableData = correctIntensities(tableData,btDF,btDA,btAD, btAF);
+
+tableData = correctIntensities(tableData,btDF,btDA,btAD, btAF, bgD, bgF, bgA);
 
 fig = figure;
 plot( tableData.FRETCor,  '-o');

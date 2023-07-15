@@ -1,5 +1,5 @@
-dataTable = table('Size', [0 6], 'VariableTypes', {'string', 'double', 'string', 'logical', 'string', 'string'}, 'VariableNames', {'name', 'midi', 'date', 'BAL', 'protocol', 'type'});
-dataTable = readtable('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET\Auswertung.xlsx');
+%dataTable = table('Size', [0 6], 'VariableTypes', {'string', 'double', 'string', 'logical', 'string', 'string'}, 'VariableNames', {'name', 'midi', 'date', 'BAL', 'protocol', 'type'});
+dataTable = readtable("C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx",  "UseExcel", false);
 
 
 folder = uigetdir();
@@ -57,4 +57,4 @@ dataTable = [dataTable; newTable];
 
 end
 end
-writetable(dataTable, 'U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET\Auswertung.xlsx');
+writetable(dataTable, "C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx");

@@ -1,7 +1,7 @@
 %dataTable = table('Size', [0 9], 'VariableTypes', {'string','double','string', 'double', 'double', 'double','double', 'double', 'double'}, ...
 %    'VariableNames', {'name', 'midi', 'date', 'timeBef', 'timeAft','BAL_FRETCor','BAL_FRETCorNorm' , 'BAL_FRETCorNormBleachCor', 'BAL_FRETXia'});
 %dataTable = readtable('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET\AnalysisBAL.xlsx');
-dataTable = readtable('C:\Users\Christian\Documents\FRET\AnalysisBAL.xlsx');
+dataTable = readtable('C:\Users\Christian\OneDrive\Dokumente\FRET\AnalysisBAL.xlsx');
 
 bandwith = 100;
 
@@ -28,10 +28,17 @@ isThere(i) = ~any(strcmp(tableNames, name{i}));
 end
 filesBAL = filesBAL(isThere);
 
+f = waitbar(0, "This seems like an incredibly long placeholder, like really not usefull,but it needs to be this way, because the filenames are incredibly long, trust me it is better like this...");
+                f.Children(1).Title.Interpreter = 'none';
+
+data = cell(1, numel(filesBAL));
 for i = 1:numel(filesBAL)
     filename = fullfile(filesBAL(i).folder, filesBAL(i).name);
+    waitbar(round(numel(filesBAL)/i),f,append("Loading: ", fileName), 'Interpreter', 'none');
     data{i} = load(filename); % replace this with the appropriate loading function for your file type
 end
+                close(f)
+
 
 for i = 1:numel(data)
     FretData = data{1,i}.obj;
@@ -95,7 +102,7 @@ newNames = name2(~ismember(name2, name1));
 newTable = newTable(ismember(newTable.name, newNames), :);
 dataTable = [dataTable; newTable];
 
-writetable(dataTable, 'C:\Users\Christian\Documents\FRET\AnalysisBAL.xlsx');
+writetable(dataTable, 'C:\Users\Christian\OneDrive\Dokumente\FRET\AnalysisBAL.xlsx');
 
 
 

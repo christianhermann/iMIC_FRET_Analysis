@@ -1,33 +1,36 @@
+bgData = getBackground;
+
 %%%mTq2%%%
-folder = 'C:\Users\Christian\Documents\FRET\BleedThrough\mTq2';
-bleedthroughmTq2 = bleedthroughFunction(folder);
+folder = 'C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\mTq2';
+bleedthroughmTq2 = bleedthroughFunction(folder, bgData);
 btmTq2DonorFRET = mean([bleedthroughmTq2.SexSemSexLem]);
 save("btmTq2DonorFRET.mat", 'btmTq2DonorFRET');
 
 %%%cpmTq2%%%
-folder = 'C:\Users\Christian\Documents\FRET\BleedThrough\cpmTq2';
-bleedthroughcpmTq2 = bleedthroughFunction(folder);
+folder = 'C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\cpmTq2';
+bleedthroughcpmTq2 = bleedthroughFunction(folder, bgData);
 btcpmTq2DonorFRET = mean([bleedthroughcpmTq2.SexSemSexLem]);
 save("btcpmTq2DonorFRET.mat", 'btcpmTq2DonorFRET');
 
 
 %%%FlAsH%%%
-folder = 'C:\Users\Christian\Documents\FRET\BleedThrough\FlAsH';
-bleedthroughFlAsH = bleedthroughFunction(folder);
+folder = 'C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\FlAsH';
+bleedthroughFlAsH = bleedthroughFunction(folder, bgData);
+btFlAsHAkzeptorFRET = mean([bleedthroughFlAsH.LexLemSexLem]);
 %Vernachlässigbar Gering%
 
 
 
 %%%Atto425MeTet%%%
-folder = 'C:\Users\Christian\Documents\FRET\BleedThrough\Atto425MeTet';
-bleedthroughAtto425 = bleedthroughFunction(folder);
+folder = 'C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\Atto425MeTet';
+bleedthroughAtto425 = bleedthroughFunction(folder,bgData);
 btAtto425DonorFRET = mean([bleedthroughAtto425.SexSemSexLem]);
 save("btAtto425DonorFRET.mat", 'btAtto425DonorFRET');
 
 
 %%%CF500MeTet%%%
-folder = 'C:\Users\Christian\Documents\FRET\BleedThrough\CF500MeTet';
-bleedthroughCF500 = bleedthroughFunction(folder);
+folder = 'C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\CF500MeTet';
+bleedthroughCF500 = bleedthroughFunction(folder, bgData);
 btCF500AkzeptorFRET = mean([bleedthroughCF500.LexLemSexLem]);
 save("btCF500AkzeptorFRET.mat", 'btCF500AkzeptorFRET');
 

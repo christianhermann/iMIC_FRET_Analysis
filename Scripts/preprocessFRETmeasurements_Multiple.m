@@ -1,7 +1,6 @@
-addpath 'C:\Users\Christian\Documents\FRET\Scripts\Functions'
-
+addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Scripts\'));
 %bt = load('C:\Users\Christian\Documents\FRET\BleedThrough\btmTq2FlAsH.mat');
-bt = load('C:\Users\Christian\Documents\FRET\BleedThrough\btcpmTq2FlAsH.mat');
+bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btcpmTq2FlAsH.mat');
 
 fns = fieldnames(bt);
 bt = bt.(fns{1});
@@ -10,12 +9,15 @@ btData.btAF = bt.AF;
 btData.btAD = bt.AD;
 btData.btDA = bt.DA;
 
-%Gfactor  = load('C:\Users\Christian\Documents\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
-Gfactor  = load('C:\Users\Christian\Documents\FRET\G-Factor\G-Factor_cpmTq2-FlAsH.mat');
+bgData = getBackground;
 
+%Gfactor  = load('C:\Users\Christian\Documents\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
+Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_cpmTq2-FlAsH.mat');
 Gfactor = Gfactor.MeanGFactor;
 
+Efactor = 0;
 
+infoTable = readtable("C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx",  "UseExcel", false);
 folderTopLevel = uigetdir(); % replace with the actual path to the folder
 
 files = dir(folderTopLevel);
@@ -61,22 +63,28 @@ for k = 1:length(subDirsNames)
                 saveFolder = append(strjoin(folderSplit(1:(numel(folderSplit)-3)),'\'), '\Processed\', strjoin(folderSplit((numel(folderSplit)-2):numel(folderSplit)),'\'));
                 waitbar(.11,f,'Downsampling your data');
                 tableData = downsampleMeasData(measurementPlotData, 50, 10);
-                FretData = FRETdata(tableData, btData, Gfactor, fileName, folder, saveFolder);
-                waitbar(.22,f,'Cutting your data');
+                FretData = FRETdata(tableData, bgData, btData, Gfactor, fileName, folder, saveFolder);
+                FretData.protocolStartTime = infoTable.timeStart(find(contains (infoTable.name,fileName)));
+                fileNameSplit = split(fileName, '-');
+                FretData.protocol = fileNameSplit{length(fileNameSplit) - 2};
+                FretData.protocolStructure = FretData.getProtocolData;
+                waitbar(.20,f,'Cutting your data');
                 FretData = FretData.cutMeasurement("rawData");
-                waitbar(.33,f,'Correcting intensities of your data');
+                waitbar(.29,f,'Correcting intensities of your data');
                 FretData = FretData.correctIntensities("cutData");
-                waitbar(.44,f,'Correct photobleaching of your data');
+                waitbar(.38,f,'Correct photobleaching of your data');
                 FretData = FretData.correctBleaching("btCorrectedData", 200);
-                waitbar(.55,f,'Calculation FRET Ratio');
+                waitbar(.47,f,'Calculation FRET Ratio');
                 FretData = FretData.calculateRatio("btPbCorrectedData", 0);
-                waitbar(.66,f,'Calculation NFRET');
+                waitbar(.56,f,'Calculation NFRET');
                 FretData = FretData.calculateNFRET("btCorrectedData");
-                waitbar(.77,f,'Calculation EFRET');
+                waitbar(.65,f,'Calculation EFRET');
                 FretData = FretData.calculateEFRET("cutData");
-                waitbar(.88,f,'Norming your data');
+                waitbar(.74,f,'Calculation DFRET');
+                FretData = FretData.calculateDFRET("cutData");
+                waitbar(.83,f,'Norming your data');
                 FretData = FretData.normFRETtoOne("btPbCorrectedData", 100,500);
-                waitbar(.99,f,'Calculation FRET Ratio');
+                waitbar(.92,f,'Calculation FRET Ratio');
                 FretData = FretData.calculateRatio("normFRET", 1);
                 waitbar(1,f,'Saving your data');
                 FretData.saveMatFile

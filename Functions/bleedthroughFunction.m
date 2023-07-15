@@ -1,4 +1,4 @@
-function [bleedthrough] = bleedthroughFunction(folder)
+function [bleedthrough] = bleedthroughFunction(folder, bgData)
 %BLEEDTHROUGHFUNCTION Calculate bleedthrough values from measurement data
 %   bleedthrough = bleedthroughFunction(folder) calculates the bleedthrough values from measurement
 %   data files located in the specified folder. The function reads .mat files in the folder and
@@ -17,8 +17,8 @@ function [bleedthrough] = bleedthroughFunction(folder)
 %   See also DIR, STRUCT2CELL, CELL2MAT, MOVMEAN.
 
 % Define parameters
-windowSize = 15;
-downsampleFrequency = 15;
+windowSize = 1;
+downsampleFrequency = 1;
 
 % Get a list of .mat files in the specified folder
 files = dir(folder);
@@ -54,10 +54,10 @@ for i = 1:size(files)
     minRows = min(rows);
     
     % Trim the downsampled data to the minimum number of rows
-    downsampledData{1} = downsampledData{1}(1:minRows, :);
-    downsampledData{2} = downsampledData{2}(1:minRows, :);
-    downsampledData{3} = downsampledData{3}(1:minRows, :);
-    downsampledData{4} = downsampledData{4}(1:minRows, :);
+    downsampledData{1} = downsampledData{1}(1:minRows, :) - bgData.Donor;
+    downsampledData{2} = downsampledData{2}(1:minRows, :) - bgData.Empty;
+    downsampledData{3} = downsampledData{3}(1:minRows, :) - bgData.FRET;
+    downsampledData{4} = downsampledData{4}(1:minRows, :) - bgData.Acceptor;
     
     % Calculate the bleedthrough values
     bleedthrough(i).SexSemSexLem = mean(downsampledData{3}.value_3 ./ downsampledData{1}.value_1);
