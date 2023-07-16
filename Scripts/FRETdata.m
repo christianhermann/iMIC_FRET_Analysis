@@ -203,7 +203,7 @@ classdef FRETdata
 
                 for k = 1:3
                     fig = figure;
-                    plot(tableData.(tableDataNames{k})(round(1:numel(tableData.(tableDataNames{k}))/3)),  '-o');
+                    plot(obj.cutTime ,tableData.(tableDataNames{k})(round(1:numel(tableData.(tableDataNames{k}))/3)),  '-o');
                     title(append("Correct bleaching", tableDataNames{k}), obj.fileName, 'Interpreter', 'none');
                     grid on
                     grid minor
@@ -355,8 +355,8 @@ classdef FRETdata
             Acda = (tableData.Acceptor - S3 * tableData.Donor) / 1 - S3 * S4;
             FRETc = tableData.FRET - Dcda * S1 - Acda * S2;
 
-            C1 = FRETc - (E * FRETc) / E * Dcda;
-            DFRET = FRETc / (C1 * Dcda + FRETc);
+            C1 = FRETc - (E * FRETc) / E .* Dcda;
+            DFRET = FRETc ./ (C1 .* Dcda + FRETc);
 
             newTable.FRET = DFRET;
             newTable.Donor = tableData.Donor;
