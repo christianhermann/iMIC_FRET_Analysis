@@ -123,6 +123,7 @@ classdef FRETdata
 
             obj.rawData = rawData;
             obj.btData = btData;
+            obj.bgData = bgData;
             obj.Gfactor = Gfactor;
             obj.Efactor = Efactor;
             obj.fileName = fileName;
@@ -169,7 +170,8 @@ classdef FRETdata
             % The btCorrectedData property will be updated with the corrected FRET data.
 
             tableData = obj.(data);
-            newTable = correctIntensities(tableData, obj.btData.btDF, obj.btData.btDA, obj.btData.btAD, obj.btData.btAF, obj.bgData.bgD, obj.bgData.bgF, obj.bgData.bgA);
+            newTable = correctIntensities(tableData, obj.btData.btDF, obj.btData.btDA, obj.btData.btAD, ...
+                obj.btData.btAF, obj.bgData.Donor, obj.bgData.FRET, obj.bgData.Acceptor);
             obj.btCorrectedData = newTable;
         end
 

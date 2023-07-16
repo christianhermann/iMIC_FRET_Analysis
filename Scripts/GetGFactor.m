@@ -15,13 +15,14 @@ end
 btDF = load('C:\Users\Christian\Documents\FRET\BleedThrough\btmTq2DonorFRET.mat');
 btDF = btDF.btmTq2DonorFRET;
 
-windowSize = 15;
-downsampleFrequency = 15;
-bandwith = 100;
+windowSize = 1;
+downsampleFrequency = 1;
+bandwith = 1000;
 
 for i = 1:numel(data)
 tableData{i} = downsampleMeasData(data{i}.measurementPlotData, windowSize, downsampleFrequency);
-GFactor(i) = calculateGFactor(tableData{i}, bandwith, btDF);
+
+GFactor(i) = calculateGFactor(tableData{i}, bandwith, 'btDF', btDF, 'bgD', bgData.Donor, 'bgA', bgData.Acceptor, 'bgF',bgData.FRET);
 end
 
 MeanGFactor = mean(GFactor);

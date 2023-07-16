@@ -15,7 +15,8 @@ bgData = getBackground;
 Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
 Gfactor = Gfactor.MeanGFactor;
 
-Efactor = 0;
+Efactor = load('C:\Users\Christian\OneDrive\Dokumente\FRET\E-Factor\E-Factor_mTq2-FlAsH.mat');
+Efactor = Efactor.MeanEFactor;
 
 infoTable = readtable("C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx",  "UseExcel", false);
 

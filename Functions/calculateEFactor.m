@@ -2,8 +2,8 @@ function [E] = calculateEFactor(tableDataDonor, tableDataAcceptor, tableDataComp
 %CALCULATEEFACTOR Calculate the E factor for FRET data
 %   [E] = calculateEFactor(tableDataDonor, tableDataAcceptor, tableDataComplete, bandwith) calculates the E factor
 %   for FRET data using the provided table data and bandwith value.
-%
-%   Inputs:
+
+%   Inputs:%
 %   - tableDataDonor: Table data for the donor channel.
 %   - tableDataAcceptor: Table data for the acceptor channel.
 %   - tableDataComplete: Complete table data with both donor and acceptor channels.

@@ -1,6 +1,6 @@
 addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Scripts\'));
-%bt = load('C:\Users\Christian\Documents\FRET\BleedThrough\btmTq2FlAsH.mat');
-bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btcpmTq2FlAsH.mat');
+bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2FlAsH.mat');
+%bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btcpmTq2FlAsH.mat');
 
 fns = fieldnames(bt);
 bt = bt.(fns{1});
@@ -11,12 +11,14 @@ btData.btDA = bt.DA;
 
 bgData = getBackground;
 
-%Gfactor  = load('C:\Users\Christian\Documents\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
-Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_cpmTq2-FlAsH.mat');
+Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
+%Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_cpmTq2-FlAsH.mat');
 Gfactor = Gfactor.MeanGFactor;
 
-Efactor = 0;
+Efactor = load('C:\Users\Christian\OneDrive\Dokumente\FRET\E-Factor\E-Factor_mTq2-FlAsH.mat');
+Efactor = Efactor.MeanEFactor;
 
+settingsPath = 'C:\Users\Christian\OneDrive\Dokumente\FRET\Settings\';
 infoTable = readtable("C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx",  "UseExcel", false);
 folderTopLevel = uigetdir(); % replace with the actual path to the folder
 
@@ -63,11 +65,11 @@ for k = 1:length(subDirsNames)
                 saveFolder = append(strjoin(folderSplit(1:(numel(folderSplit)-3)),'\'), '\Processed\', strjoin(folderSplit((numel(folderSplit)-2):numel(folderSplit)),'\'));
                 waitbar(.11,f,'Downsampling your data');
                 tableData = downsampleMeasData(measurementPlotData, 50, 10);
-                FretData = FRETdata(tableData, bgData, btData, Gfactor, fileName, folder, saveFolder);
+                FretData = FRETdata(tableData, bgData, btData, Gfactor, Efactor, fileName, folder, saveFolder);
                 FretData.protocolStartTime = infoTable.timeStart(find(contains (infoTable.name,fileName)));
                 fileNameSplit = split(fileName, '-');
                 FretData.protocol = fileNameSplit{length(fileNameSplit) - 2};
-                FretData.protocolStructure = FretData.getProtocolData;
+                FretData.protocolStructure = FretData.getProtocolData(FretData.protocol, settingsPath);
                 waitbar(.20,f,'Cutting your data');
                 FretData = FretData.cutMeasurement("rawData");
                 waitbar(.29,f,'Correcting intensities of your data');
