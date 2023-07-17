@@ -37,6 +37,7 @@ classdef FRETdata
     %   savePath - The path for saving the processed data.
     %   protocol - The protocol.
     %   protocolStartTime - The start time of the protocol.
+    %   protocolStartTimeAC - the start time of the protocol after cutting
     %   rawData - The raw FRET data.
     %   bgData  - Background values for background correction
     %   btData - Bleedthrough values for bleedthrough correction.
@@ -84,6 +85,7 @@ classdef FRETdata
         savePath
         protocol
         protocolStartTime
+        protocolStartTimeAC
         protocolStructure
         rawData
         bgData
@@ -142,6 +144,7 @@ classdef FRETdata
             title (append('Cut: ', obj.fileName), 'Interpreter', 'none');
             if ~isempty(obj.protocolStartTime)
                 title (append('Cut', obj.fileName), num2str(obj.protocolStartTime),'Interpreter', 'none');
+                xline(obj.protocolStartTime);
             end
             grid on
             grid minor
@@ -156,11 +159,11 @@ classdef FRETdata
             c_info_start = getCursorInfo(dcm_obj);
             dataIndex_start = c_info_start.DataIndex;
             close;
-            newTable = table();
             newTable = tableData(dataIndex_start(1):size(tableData,1),2:5);
-            cutTime = obj.origTime(dataIndex_start(1):size(obj.origTime));
-            cutTime = cutTime - cutTime(1);
-            obj.cutTime = cutTime;
+            cutTimeLocal = obj.origTime(dataIndex_start(1):size(obj.origTime));
+            obj.protocolStartTimeAC = obj.protocolStartTime - cutTimeLocal(1);
+            cutTimeLocal = cutTimeLocal - cutTimeLocal(1);
+            obj.cutTime = cutTimeLocal;
             obj.cutData = newTable;
         end
 
@@ -203,12 +206,17 @@ classdef FRETdata
 
                 for k = 1:3
                     fig = figure;
-                    plot(obj.cutTime ,tableData.(tableDataNames{k})(round(1:numel(tableData.(tableDataNames{k}))/3)),  '-o');
+                    plot(obj.cutTime(round(1:numel(tableData.(tableDataNames{k}))/3)) , ...
+                        tableData.(tableDataNames{k})(round(1:numel(tableData.(tableDataNames{k}))/3)),  '-o');
                     title(append("Correct bleaching", tableDataNames{k}), obj.fileName, 'Interpreter', 'none');
+                    if ~isempty(obj.protocolStartTimeAC)
+                        xline(obj.protocolStartTimeAC);
+                    end
                     grid on
                     grid minor
                     fig.WindowState = 'maximized';
-
+                    c_info = cell(1,2);
+                    dataIndex = zeros(1,2);
                     for j = 1:2
                         shg
                         dcm_obj = datacursormode(1);
@@ -314,11 +322,11 @@ classdef FRETdata
             % Calculates the E-FRET value from the cut data
 
             tableData = obj.(data);
-            btData = obj.btData;
-            a = btData.btAF;
-            b = btData.btAD;
-            c = btData.btDA;
-            d = btData.btDF;
+            btDataLocal = obj.btData;
+            a = btDataLocal.btAF;
+            b = btDataLocal.btAD;
+            c = btDataLocal.btDA;
+            d = btDataLocal.btDF;
             G = obj.Gfactor;
             newTable = table();
             tableData.FRET = tableData.FRET - obj.bgData.FRET;
@@ -341,11 +349,11 @@ classdef FRETdata
         function obj = calculateDFRET(obj, data)
             % Calculates the D-FRET value from the cut data
             tableData = obj.(data);
-            btData = obj.btData;
-            S2 = btData.btAF;
-            S4 = btData.btAD;
-            S3 = btData.btDA;
-            S1 = btData.btDF;
+            btDataLocal = obj.btData;
+            S2 = btDataLocal.btAF;
+            S4 = btDataLocal.btAD;
+            S3 = btDataLocal.btDA;
+            S1 = btDataLocal.btDF;
             E = obj.Efactor;
             tableData.FRET = tableData.FRET - obj.bgData.FRET;
             tableData.Acceptor = tableData.Acceptor - obj.bgData.Acceptor;
@@ -356,9 +364,9 @@ classdef FRETdata
             FRETc = tableData.FRET - Dcda * S1 - Acda * S2;
 
             C1 = FRETc - (E * FRETc) / E .* Dcda;
-            DFRET = FRETc ./ (C1 .* Dcda + FRETc);
+            DFRETLocal = FRETc ./ (C1 .* Dcda + FRETc);
 
-            newTable.FRET = DFRET;
+            newTable.FRET = DFRETLocal;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
             obj.DFRET = newTable;
@@ -539,14 +547,14 @@ classdef FRETdata
             protocolStructure.Time = protocolStructure.Time + protocolStartTime;
             for row = 1:height(protocolStructure)
                 if row < height(protocolStructure)
-                     protocolStructure.Times(row,:) = [protocolStructure.Time(row) protocolStructure.Time(row+1)];
+                    protocolStructure.Times(row,:) = [protocolStructure.Time(row) protocolStructure.Time(row+1)];
                 else
-                      protocolStructure.Times(row,:) = [protocolStructure.Time(row) max(obj.(time))];
+                    protocolStructure.Times(row,:) = [protocolStructure.Time(row) max(obj.(time))];
                 end
             end
-  
+
             fig = addApplicationLines(fig, protocolStructure.Times, protocolStructure.Solution, protocolStructure.Color);
- 
+
 
         end
 

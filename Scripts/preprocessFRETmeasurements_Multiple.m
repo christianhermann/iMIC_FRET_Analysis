@@ -1,7 +1,7 @@
 addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Scripts\'));
 bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2FlAsH.mat');
 %bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btcpmTq2FlAsH.mat');
-
+%bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2CF500.mat');
 fns = fieldnames(bt);
 bt = bt.(fns{1});
 btData.btDF = bt.DF;
@@ -14,9 +14,11 @@ bgData = getBackground;
 Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_mTq2-FlAsH.mat');
 %Gfactor  = load('C:\Users\Christian\OneDrive\Dokumente\FRET\G-Factor\G-Factor_cpmTq2-FlAsH.mat');
 Gfactor = Gfactor.MeanGFactor;
+%Gfactor = 0;
 
-Efactor = load('C:\Users\Christian\OneDrive\Dokumente\FRET\E-Factor\E-Factor_mTq2-FlAsH.mat');
-Efactor = Efactor.MeanEFactor;
+%Efactor = load('C:\Users\Christian\OneDrive\Dokumente\FRET\E-Factor\E-Factor_mTq2-FlAsH.mat');
+%Efactor = Efactor.MeanEFactor;
+Efactor = 0;
 
 settingsPath = 'C:\Users\Christian\OneDrive\Dokumente\FRET\Settings\';
 infoTable = readtable("C:\Users\Christian\OneDrive\Dokumente\FRET\Auswertung.xlsx",  "UseExcel", false);
