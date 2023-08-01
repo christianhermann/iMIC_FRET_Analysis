@@ -1,5 +1,6 @@
 addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Scripts\'));
-bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2FlAsH.mat');
+%bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2FlAsH.mat');
+bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btAtto425FlAsH.mat');
 %bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btcpmTq2FlAsH.mat');
 %bt = load('C:\Users\Christian\OneDrive\Dokumente\FRET\BleedThrough\btmTq2CF500.mat');
 fns = fieldnames(bt);
@@ -68,28 +69,36 @@ for k = 1:length(subDirsNames)
                 waitbar(.11,f,'Downsampling your data');
                 tableData = downsampleMeasData(measurementPlotData, 50, 10);
                 FretData = FRETdata(tableData, bgData, btData, Gfactor, Efactor, fileName, folder, saveFolder);
-                FretData.protocolStartTime = infoTable.timeStart(find(contains (infoTable.name,fileName)));
+                FretData.protocolStartTime = FretData.getProtocolTime(infoTable, fileName);
                 fileNameSplit = split(fileName, '-');
-                FretData.protocol = fileNameSplit{length(fileNameSplit) - 2};
+                try
+                FretData.protocol = FretData.getProtocolName(fileName, '-', -2);
                 FretData.protocolStructure = FretData.getProtocolData(FretData.protocol, settingsPath);
+                catch
+                    disp('No protocol found')
+                    FretData.protocol = "No";
+                end
                 waitbar(.20,f,'Cutting your data');
-                FretData = FretData.cutMeasurement("rawData");
+                [FretData.cutData, FretData.protocolStartTimeAC, FretData.cutTimeLocal] = FretData.cutMeasurement("rawData");; 
                 waitbar(.29,f,'Correcting intensities of your data');
-                FretData = FretData.correctIntensities("cutData");
+                FretData.btCorrectedData = FretData.correctIntensities("cutData");
                 waitbar(.38,f,'Correct photobleaching of your data');
-                FretData = FretData.correctBleaching("btCorrectedData", 200);
+                [FretData.pbIndices, FretData.pbSlope, FretData.btPbCorrectedData] = FretData.correctBleaching("btCorrectedData", 200);
                 waitbar(.47,f,'Calculation FRET Ratio');
-                FretData = FretData.calculateRatio("btPbCorrectedData", 0);
+                FretData.Ratio = FretData.calculateRatio("btCorrectedData");
+                FretData.pbCorrectedRatio = FretData.calculateRatio("btPbCorrectedData");
                 waitbar(.56,f,'Calculation NFRET');
-                FretData = FretData.calculateNFRET("btCorrectedData");
+                FretData.NFRET = FretData.calculateNFRET("btCorrectedData");
                 waitbar(.65,f,'Calculation EFRET');
-                FretData = FretData.calculateEFRET("cutData");
+                FretData.EFRET = FretData.calculateEFRET("cutData");
                 waitbar(.74,f,'Calculation DFRET');
-                FretData = FretData.calculateDFRET("cutData");
+                FretData.DFRET = FretData.calculateDFRET("cutData");
                 waitbar(.83,f,'Norming your data');
-                FretData = FretData.normFRETtoOne("btPbCorrectedData", 100,500);
-                waitbar(.92,f,'Calculation FRET Ratio');
-                FretData = FretData.calculateRatio("normFRET", 1);
+                FretData.normPbCorrectedFRET = FretData.normFRETtoOne("btPbCorrectedData", 100,500);
+                FretData.normFRET = FretData.normFRETtoOne("btCorrectedData", 100,500);
+                waitbar(.92,f,'Calculation normed FRET Ratio');
+                FretData.normRatio = FretData.calculateRatio("normFRET");
+                FretData.normPbCorrectedRatio = FretData.calculateRatio("normPbCorrectedFRET");
                 waitbar(1,f,'Saving your data');
                 FretData.saveMatFile
                 close(f)

@@ -38,6 +38,10 @@ switch data
         ylab = ["Intensität (µA)" "Intensität (mV)" "Intensität (arb. unit)"];
         textTitle = ["Donor" "Akzeptor" "EFRET"];
         fig = obj.createFRETPlot(data, 'ylab', ylab, 'textTitle', textTitle, 'changeUnitDonor', 10^6, 'changeUnitAcceptor', 10^3);
+            case "DFRET"
+        ylab = ["Intensität (µA)" "Intensität (mV)" "Intensität (arb. unit)"];
+        textTitle = ["Donor" "Akzeptor" "DFRET"];
+        fig = obj.createFRETPlot(data, 'ylab', ylab, 'textTitle', textTitle, 'changeUnitDonor', 10^6, 'changeUnitAcceptor', 10^3);
     case "normFRET"
         ylab = ["Intensität_{norm}" "Intensität_{norm}" "Intensität_{norm}"];
         fig = obj.createFRETPlot(data, 'ylab', ylab);

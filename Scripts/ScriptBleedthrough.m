@@ -70,9 +70,9 @@ save("btcpmTq2CF500.mat", 'btcpmTq2CF500');
 
 %%Atto425-FlAsH%%
 Att425FlAsH.DF = btAtto425DonorFRET;
-Att425FlAsH.AF = btCF500AkzeptorFRET;
+Att425FlAsH.AF = 0;
 Att425FlAsH.AD = 0;
 Att425FlAsH.DA = 0;
-save("Att425FlAsH.mat", 'Att425FlAsH');
+save("btAtt425FlAsH.mat", 'Att425FlAsH');
 %%
 

@@ -18,10 +18,21 @@ function [FRET_Rel, FRET_Abs, FRET_Bef, FRET_Aft] = calcFRETEfficiency(data, ind
 %
 %   See also MEAN.
 
+%Check if index is in measurement Data
+if max(indexWithBandwith2) > numel(data)
+    FRET_Bef = NaN;
+    FRET_Aft = NaN;
+    FRET_Abs = NaN;
+    FRET_Rel = NaN;
+    return
+end
+
+
 % Calculate the mean FRET intensity before and after the bandwidth regions
 FRET_Bef = mean(data(indexWithBandwith1));
 FRET_Aft = mean(data(indexWithBandwith2));
 
+%
 % Calculate the absolute and relative FRET efficiency
 FRET_Abs = FRET_Bef - FRET_Aft;
 FRET_Rel = FRET_Abs / FRET_Bef;

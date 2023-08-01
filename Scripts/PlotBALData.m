@@ -1,6 +1,9 @@
-%addpath(genpath('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET'));
+addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Utilitys'));
+addpath(genpath('C:\Users\Christian\OneDrive\Dokumente\FRET\Scripts'));
+
 %BALData = readtable('U:\Projekte an Analysis1\Christian\mTRPC5 Projekt\Auswertungen\FRET\AnalysisBAL.xlsx');
-BALData = readtable('C:\Users\Christian\Documents\FRET\AnalysisBAL.xlsx');
+
+BALData = readtable('C:\Users\Christian\OneDrive\Dokumente\FRET\AnalysisBAL.xlsx');
 BALData = BALData(BALData.quality == 1,:);
 filler = repelem('+', numel(BALData.midi));
 newMidi = [num2str(BALData.midi) filler' num2str(BALData.midiCo)];

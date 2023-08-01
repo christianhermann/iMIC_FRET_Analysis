@@ -49,7 +49,8 @@ classdef FRETdata
     %   btCorrectedData - The FRET data corrected for background fluorescence.
     %   btPbCorrectedData - The FRET data corrected for background fluorescence and photobleaching.
     %   normFRET - The FRET values (btPBCorrected) normalized to one.
-    %   Ratio - The FRET ratio calculated from the btPbCorrectedData.
+    %   Ratio - The FRET ratio calculated from the btCorrectedData.
+    %   pbCorRatio - The FRET ratio calculated from the bPbtCorrectedData.
     %   normRatio - The FRET ratio calculated from normalized btPbCorrectedData.
     %   NFRET - The normalized FRET ratio (Xia et al.).
     %   EFRET - The E-FRET value (Zal et al.).
@@ -98,8 +99,11 @@ classdef FRETdata
         btCorrectedData
         btPbCorrectedData
         normFRET
+        normPbCorrectedFRET
         Ratio
+        pbCorrectedRatio
         normRatio
+        normPbCorrectedRatio
         NFRET
         EFRET
         DFRET
@@ -134,7 +138,7 @@ classdef FRETdata
             obj.origTime = rawData.('time (s)');
         end
 
-        function obj = cutMeasurement(obj, data)
+        function [newTable, protocolStartTimeAC, cutTimeLocal] = cutMeasurement(obj, data)
             % cutMeasurement Cuts the measurement based on the selected time points.
             % The cutData property will be updated with the cut FRET data.
 
@@ -161,13 +165,12 @@ classdef FRETdata
             close;
             newTable = tableData(dataIndex_start(1):size(tableData,1),2:5);
             cutTimeLocal = obj.origTime(dataIndex_start(1):size(obj.origTime));
-            obj.protocolStartTimeAC = obj.protocolStartTime - cutTimeLocal(1);
+            protocolStartTimeAC = obj.protocolStartTime - cutTimeLocal(1);
             cutTimeLocal = cutTimeLocal - cutTimeLocal(1);
-            obj.cutTime = cutTimeLocal;
-            obj.cutData = newTable;
+        
         end
 
-        function obj = correctIntensities(obj, data)
+        function newTable = correctIntensities(obj, data)
             % correctIntensities Corrects the intensities in the selected property using
             % the background and direct acceptor/donor fluorescence measurements.
             % The btCorrectedData property will be updated with the corrected FRET data.
@@ -175,10 +178,9 @@ classdef FRETdata
             tableData = obj.(data);
             newTable = correctIntensities(tableData, obj.btData.btDF, obj.btData.btDA, obj.btData.btAD, ...
                 obj.btData.btAF, obj.bgData.Donor, obj.bgData.FRET, obj.bgData.Acceptor);
-            obj.btCorrectedData = newTable;
         end
 
-        function obj = correctBleaching(obj, data, bandwith, oldDIwB1, oldDIwB2)
+        function [pbIndicesLocal, pbSlopeLocal, newTable] = correctBleaching(obj, data, bandwith, oldDIwB1, oldDIwB2)
             % correctBleaching Corrects for photobleaching in the selected property.
             % The btPbCorrectedData property will be updated with the photobleaching-corrected FRET data.
             %
@@ -240,7 +242,7 @@ classdef FRETdata
                 end
             end
 
-            obj.pbIndices = [{"Donor" "FRET" "Acceptor"}; dIwB1; dIwB2];
+            pbIndicesLocal = [{"Donor" "FRET" "Acceptor"}; dIwB1; dIwB2];
 
             newTable = table();
 
@@ -254,7 +256,7 @@ classdef FRETdata
             slopeAcceptor = (mean(Acceptor(dIwB1{3}))-mean(Acceptor(dIwB2{3}))) / ...
                 (obj.cutTime(dataIndex(2)) - obj.cutTime(dataIndex(1)));
 
-            obj.pbSlope =  table(slopeDonor, slopeFRET, slopeAcceptor);
+            pbSlopeLocal =  table(slopeDonor, slopeFRET, slopeAcceptor);
 
 
             DonorCorNormBleachCor = Donor + obj.cutTime * slopeDonor;
@@ -267,11 +269,10 @@ classdef FRETdata
 
             newTable.Acceptor = AcceptorCorNormBleachCor;
 
-            obj.btPbCorrectedData = newTable;
 
         end
 
-        function obj = normFRETtoOne(obj, data, setto1meanstart, setto1meanlength)
+        function newTable = normFRETtoOne(obj, data, setto1meanstart, setto1meanlength)
             % calculateRatio Calculates the FRET ratio from the selected property.
             % The Ratio property will be updated with the calculated FRET ratio.
             tableData = obj.(data);
@@ -285,10 +286,9 @@ classdef FRETdata
 
             AcceptorCorNorm = tableData.Acceptor ./ mean(tableData.Acceptor(range));
             newTable.Acceptor = AcceptorCorNorm;
-            obj.normFRET = newTable;
         end
 
-        function obj = calculateRatio(obj, data, normed)
+        function newTable = calculateRatio(obj, data)
             % calculateRatio Calculates the FRET ratio from the selected property.
             % The Ratio property will be updated with the calculated FRET ratio.
             tableData = obj.(data);
@@ -297,16 +297,9 @@ classdef FRETdata
             newTable.FRET = RatioFRET;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            if normed == 0
-                obj.Ratio = newTable;
-            end
-            if normed == 1
-                obj.normRatio = newTable;
-            end
-
         end
 
-        function obj = calculateNFRET(obj, data)
+        function newTable = calculateNFRET(obj, data)
             % Calculates the normalized FRET (Xia et al) ratio from the
             % corrected FRET data
             tableData = obj.(data);
@@ -315,10 +308,9 @@ classdef FRETdata
             newTable.FRET = FRETXia;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            obj.NFRET = newTable;
         end
 
-        function obj = calculateEFRET(obj, data)
+        function newTable = calculateEFRET(obj, data)
             % Calculates the E-FRET value from the cut data
 
             tableData = obj.(data);
@@ -343,10 +335,9 @@ classdef FRETdata
             newTable.FRET = Ecorr;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            obj.EFRET = newTable;
         end
 
-        function obj = calculateDFRET(obj, data)
+        function newTable = calculateDFRET(obj, data)
             % Calculates the D-FRET value from the cut data
             tableData = obj.(data);
             btDataLocal = obj.btData;
@@ -355,6 +346,7 @@ classdef FRETdata
             S3 = btDataLocal.btDA;
             S1 = btDataLocal.btDF;
             E = obj.Efactor;
+            
             tableData.FRET = tableData.FRET - obj.bgData.FRET;
             tableData.Acceptor = tableData.Acceptor - obj.bgData.Acceptor;
             tableData.Donor = tableData.Donor - obj.bgData.Donor;
@@ -365,11 +357,11 @@ classdef FRETdata
 
             C1 = FRETc - (E * FRETc) / E .* Dcda;
             DFRETLocal = FRETc ./ (C1 .* Dcda + FRETc);
-
+            
+            newTable = table();
             newTable.FRET = DFRETLocal;
             newTable.Donor = tableData.Donor;
             newTable.Acceptor   = tableData.Acceptor;
-            obj.DFRET = newTable;
 
         end
 
@@ -502,6 +494,8 @@ classdef FRETdata
             for i = 1:numel(Xaxis)
                 nexttile
                 plot(obj.(Xaxis(i)), tableData.(YAxis(i)),colors(i))
+                fig.Children.Children(1).Children.Annotation.LegendInformation.IconDisplayStyle = "off";
+
                 % xlim([0 round(max(obj.(Xaxis(i))))])
                 axis padded
                 title(textTitle(i))
@@ -538,12 +532,22 @@ classdef FRETdata
             save(compSaveName, "obj")
         end
 
-        function obj = getProtocolData(obj, protocolName, settingsPath)
+        function protocolTable = getProtocolData(~, protocolName, settingsPath)
             protocolTable = readtable(fullfile(settingsPath, append(protocolName, ".xlsx")));
-            obj.protocolStructure = protocolTable;
         end
 
+        function protocolTime = getProtocolTime(infoTable, fileName)
+            protocolTime = infoTable.timeStart(find(contains (infoTable.name,fileName)));
+        end
+
+        function protocolName = getProtocolName(fileName, seperator, index)
+            fileNameSplit = split(fileName, seperator);
+            protocolName = fileNameSplit{length(fileNameSplit) + index};
+        end
         function fig = addPharmakaToFig(obj, time, fig, protocolStartTime, protocolStructure)
+            if contains(obj.fileName, "BAL") ||  contains(obj.fileName, "BLEACH")  || contains(obj.protocol, "No") 
+                return
+            end
             protocolStructure.Time = protocolStructure.Time + protocolStartTime;
             for row = 1:height(protocolStructure)
                 if row < height(protocolStructure)
@@ -554,8 +558,6 @@ classdef FRETdata
             end
 
             fig = addApplicationLines(fig, protocolStructure.Times, protocolStructure.Solution, protocolStructure.Color);
-
-
         end
 
     end

@@ -13,11 +13,12 @@ dirFlags = [files.isdir];
 % Extract only those that are files
 files = files(~dirFlags); % A structure with extra info.
 
-
-
 filesBAL = files(contains({files.name}, 'BAL.mat'));
+
 name = struct2table(filesBAL).name;
 splitnames = cell(size(name));
+
+
 if exist("dataTable", "var")
     tableNames = dataTable.name;
 else
@@ -28,13 +29,14 @@ isThere(i) = ~any(strcmp(tableNames, name{i}));
 end
 filesBAL = filesBAL(isThere);
 
+
 f = waitbar(0, "This seems like an incredibly long placeholder, like really not usefull,but it needs to be this way, because the filenames are incredibly long, trust me it is better like this...");
                 f.Children(1).Title.Interpreter = 'none';
 
 data = cell(1, numel(filesBAL));
 for i = 1:numel(filesBAL)
     filename = fullfile(filesBAL(i).folder, filesBAL(i).name);
-    waitbar(round(numel(filesBAL)/i),f,append("Loading: ", fileName), 'Interpreter', 'none');
+    waitbar(i/numel(filesBAL),f,append("Loading: ", filename), 'Interpreter', 'none');
     data{i} = load(filename); % replace this with the appropriate loading function for your file type
 end
                 close(f)
@@ -43,7 +45,7 @@ end
 for i = 1:numel(data)
     FretData = data{1,i}.obj;
     fig = figure;
-    plot(FretData.cutTime, FretData.btCorrectedData.FRET,  '-o');
+    plot(FretData.cutTime, FretData.btPbCorrectedData.FRET,  '-o');
     fig.WindowState = 'maximized';
     for j = 1:2
         shg
@@ -57,7 +59,7 @@ for i = 1:numel(data)
     iwB1 = indexWBandwith(dataIndex(i,1), bandwith);
     iwB2 = indexWBandwith(dataIndex(i,2), bandwith);
 
-    dataTypes = ["cutData", "btCorrectedData", "btPbCorrectedData", "Ratio", "NFRET", "EFRET", "normFRET", "normRatio"];
+    dataTypes = ["cutData", "btCorrectedData", "btPbCorrectedData", "Ratio", "NFRET", "EFRET", "DFRET", "normFRET", "normRatio"];
 
 
     for l = 1:numel(dataTypes)
@@ -79,21 +81,32 @@ for i = 1:numel(data)
     timeBef(i,1) = FretData.cutTime(dataIndex(i,1));
     timeAft(i,1) = FretData.cutTime(dataIndex(i,2));
     close(fig);
-end
 
-
-
-
-for i = 1:numel(name)
-    splitnames{i} = split(name{i}, '-');
+     nameTable(i,1) = string(name(i));
+ splitnames{i} = split(name{i}, '-');
     midi(i,1) = str2double(splitnames{i}{4});
     midiCo(i,1) = NaN;
     if length(splitnames{i}) == 9
         midiCo(i,1) = str2double(splitnames{i}{6});
     end
     dateMeas(i,1) = string(splitnames{i}{1});
+    quality(i,1) = 1;
 end
-quality = ones(numel(name),1);
+name = nameTable;
+
+
+
+% 
+% for i = 1:length(name)
+%     splitnames{i} = split(name{i}, '-');
+%     midi(i,1) = str2double(splitnames{i}{4});
+%     midiCo(i,1) = NaN;
+%     if length(splitnames{i}) == 9
+%         midiCo(i,1) = str2double(splitnames{i}{6});
+%     end
+%     dateMeas(i,1) = string(splitnames{i}{1});
+% end
+% quality = ones(numel(name),1);
 newTable = [table(name, midi, midiCo,dateMeas, timeBef, timeAft, quality) struct2table(structfun(@(x) x', tableData, 'UniformOutput', false))];
 
 name1 = dataTable.name;
